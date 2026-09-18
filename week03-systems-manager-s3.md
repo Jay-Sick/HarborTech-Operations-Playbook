@@ -1,4 +1,4 @@
-AWS Systems Manager provides centralized management capabilities for EC2 instances. Run Command supports remote command execution across multiple systems, Inventory collects system data, Parameter Store centralizes configuration values, and Session Manager provides secure administrative access. Amazon S3 Static Website Hosting allows public delivery of static web content without requiring a traditional web server.
+[AWS Systems Manager provides centralized management capabilities for EC2 instances. Run Command supports remote command execution across multiple systems, Inventory collects system data, Parameter Store centralizes configuration values, and Session Manager provides secure administrative access. Amazon S3 Static Website Hosting allows public delivery of static web content without requiring a traditional web server.
  
 ## Virtualization Connection
  
@@ -62,4 +62,4 @@ This lab demonstrated that automation should be applied when a task is repeated 
  
 **Object Storage:** A storage model that stores data as objects rather than blocks or filesystems, as used by Amazon S3.
  
-**Management Plane:** The administrative layer used to configure, monitor, and control cloud resources.
+**Management Plane:** The administrative layer used to configure, monitor, and control cloud resources.](https://github.com/Jay-Sick/HarborTech-Operations-Playbook/blob/main/week03-systems-manager-s3.md)
