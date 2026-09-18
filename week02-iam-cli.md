@@ -1,214 +1,90 @@
-# Week 3: Systems Manager and S3
+# Week 2: IAM and AWS CLI Investigation
 
 ## HarborTech Ticket Summary
-
-HarborTech received ticket TKT-2026-0003 from Bright Path Nonprofits regarding two operational challenges.
-
-The first issue involved weekly software maintenance across five EC2 instances. The organization's operations coordinator currently logs into each server individually every Monday and performs updates manually, resulting in approximately 90 minutes of repetitive administrative work.
-
-The second issue involved a request for a simple public resource page containing program hours, contact information, images, and downloadable forms. Since the content is entirely static, the client wanted to determine whether a traditional server was necessary.
-
-The goal of this investigation was to evaluate AWS Systems Manager capabilities for centralized management and automation, assess the role of Parameter Store in configuration management, and determine whether Amazon S3 Static Website Hosting was an appropriate solution for the website requirement.
+HarborTech received ticket TKT-2026-0002 regarding Riverside Goods, where newly hired Inventory Coordinator Marcus Webb was unable to access company S3 storage. While Marcus could sign into the AWS Management Console with his credentials, any attempt to list or interact with the riverside-inventory S3 bucket resulted in an AccessDenied error. HarborTech was assigned to investigate the root cause, determine whether the failure stemmed from authentication or authorization, evaluate a client request to grant full S3 administrative access, and formulate a least-privilege remediation plan.
 
 ## Client Impact
-
-Repeated manual administration increases operational costs and introduces consistency risks. When administrators perform identical tasks across multiple servers manually, there is always a possibility that a command will be skipped, executed incorrectly, or applied differently on one system. These inconsistencies can create configuration drift and complicate troubleshooting.
-
-The process also consumes valuable staff time that could be redirected toward higher-value operational activities.
-
-For the public website requirement, deploying and maintaining an EC2 instance to serve static content would add unnecessary patching, monitoring, and maintenance responsibilities without providing additional business value.
+Because of the access failure, Marcus Webb was blocked from performing his daily operational tasks, which include reviewing inventory reports and uploading vendor inventory documentation to the riverside-inventory bucket. This authorization blocker halted supply chain workflows and risked operational delays for Riverside Goods ahead of daily inventory reconciliation.
 
 ## AWS Services Involved
-
-- AWS Systems Manager
-- AWS Systems Manager Run Command
-- AWS Systems Manager State Manager
-- AWS Systems Manager Session Manager
-- AWS Systems Manager Inventory
-- AWS Systems Manager Parameter Store
-- Amazon S3
-- Amazon S3 Static Website Hosting
-- AWS CloudShell
-- AWS Security Token Service (STS)
-
-AWS Systems Manager provides centralized administration and automation capabilities for EC2 environments. Run Command executes commands across managed instances, Inventory collects system information, Session Manager provides secure interactive access, and Parameter Store centralizes application configuration values.
-
-Amazon S3 provides highly durable object storage, while Static Website Hosting allows public delivery of HTML pages and supporting files without requiring a web server.
-
-CloudShell and the AWS CLI were used to verify account identity and deploy website content during the investigation.
+* AWS Identity and Access Management (IAM): Used to manage AWS identities, permission policies, evaluation logic, and role trust relationships.
+* Amazon Simple Storage Service (S3): Cloud object storage hosting the target bucket riverside-inventory and inventory report objects.
+* AWS Security Token Service (STS): Requests caller identity metadata to verify active session identities and temporary security credentials.
+* AWS Command Line Interface (AWS CLI): Command-line tool used to run inspection queries (get-caller-identity, get-role, list-attached-role-policies).
+* AWS CloudShell: Browser-based terminal environment used to run AWS CLI queries within a pre-authenticated session.
+* AWS Regions: Geographic infrastructure boundaries (us-east-1 / us-west-2) governing service deployments and endpoint routing.
 
 ## Virtualization Connection
-
-This investigation demonstrates how cloud management services create abstraction layers above virtual machines.
-
-The five EC2 instances remain independent virtual systems, but Systems Manager provides a centralized management plane that allows administrators to manage them collectively rather than treating each server as a separate administrative task.
-
-Instead of opening multiple SSH sessions and repeating commands manually, administrators can use centralized tools to execute commands, collect inventory, and automate recurring tasks.
-
-The investigation also highlights situations where virtualization is not required at all. Because the Bright Path website consists entirely of static content, Amazon S3 eliminates the need for a virtual machine by providing managed object storage and website hosting functionality.
+Cloud computing relies on software-defined abstraction to manage compute, storage, and networking resources. While physical servers use hardware access controls, cloud environments rely on logical identity and access control planes to govern resource interaction. Marcus Webb successfully established a session within the virtual environment, but authentication alone does not grant access to underlying software-defined storage. IAM acts as the control plane regulating API actions against virtualized cloud resources, enforcing access boundaries regardless of the underlying physical infrastructure.
 
 ## Evidence Reviewed
-
-The active AWS Region was verified as us-east-1.
-
-AWS identity verification was performed using the command:
-
-bash aws sts get-caller-identity 
-
-The command returned:
-
-- Account ID: 0720822*****
-- ARN: arn:aws:sts::0720822*****:assumed-role/voclabs/user5398***=Jacek_Szewczyk
-
-The Systems Manager feature analysis identified:
-
-- Run Command for repeated maintenance activities
-- Inventory for configuration and software collection
-- Parameter Store for centralized configuration management
-- Session Manager for interactive administration
-
-### Managed-Node Prerequisites
-
-The investigation confirmed three managed-node prerequisites:
-
-1. The SSM Agent must be installed and actively running on each EC2 instance.
-2. Each instance must have an IAM Instance Profile with the required Systems Manager permissions.
-3. Each instance must be able to communicate with Systems Manager service endpoints.
-
-### Parameter Store Testing
-
-Parameter Store testing confirmed that configuration values can be centralized but that Parameter Store does not automatically modify existing configuration files.
-
-Applications and automation scripts must be configured to retrieve values directly from Parameter Store.
-
-### Website Deployment Evidence
-
-Website deployment included:
-
-1. Creation of brightpath-site/index.html.
-2. Creation of the S3 bucket brightpath-js-12345 in us-east-1.
-3. Successful upload of website content using:
-
-bash aws s3 cp index.html s3://brightpath-js-12345/index.html 
-
-The observed output was:
-
-text upload: ./index.html to s3://brightpath-js-12345/index.html 
-
-Static Website Hosting generated the endpoint:
-
-https://brightpath-mh-10.s3-website-us-east-1.amazonaws.com
-
-Testing the endpoint returned a 403 Forbidden response, indicating a Learner Lab public-access restriction rather than a website configuration failure.
-
-A follow-up synchronization command successfully uploaded the updated website file:
-
-bash aws s3 sync ./ s3://brightpath-js-12345/ 
+* Authentication Check: Console login succeeded using assigned IAM user credentials.
+* Business Requirements: Marcus requires permissions to list riverside-inventory, download report objects, and upload vendor inventory files.
+* Identity Profile Audit: The onboarding record revealed an IAM user identity with no attached managed policies, no inline policies, and no job-function group memberships.
+* Error Output: S3 API interactions returned AccessDenied exceptions.
+* Caller Identity Evidence: Executed aws sts get-caller-identity in CloudShell to verify session credentials:
+  json   {       "UserId": "AROARBSDQE37WJ7WGEIIT:user5398446=Jacek_Szewczyk",       "Account": "072082269951",       "Arn": "arn:aws:sts::072082269951:assumed-role/voclabs/user5398446=Jacek_Szewczyk"   }   
+* Learner Lab Role Structure Evidence: Executed aws iam get-role --role-name LabRole to inspect the trust policy:
+  json   {       "Role": {           "Path": "/",           "RoleName": "LabRole",           "RoleId": "AROARBSDQE374PEWZILAN",           "Arn": "arn:aws:iam::072082269951:role/LabRole",           "CreateDate": "2026-09-04T19:16:36+00:00",           "AssumeRolePolicyDocument": {               "Version": "2012-10-17",               "Statement": [                   {                       "Effect": "Allow",                       "Principal": {                           "AWS": "arn:aws:iam::072082269951:role/LabRole",                           "Service": [                               "apigateway.amazonaws.com",                               "states.amazonaws.com",                               "s3.amazonaws.com",                               "eks-fargate-pods.amazonaws.com",                               "autoscaling.amazonaws.com",                               "sagemaker.amazonaws.com",                               "firehose.amazonaws.com",                               "scheduler.amazonaws.com",                               "batch.amazonaws.com",                               "forecast.amazonaws.com",                               "kms.amazonaws.com",                               "backup.amazonaws.com",                               "ssm.amazonaws.com",                               "rds.amazonaws.com",                               "resource-groups.amazonaws.com",                               "elasticmapreduce.amazonaws.com",                               "servicecatalog.amazonaws.com",                               "cognito-idp.amazonaws.com",                               "deepracer.amazonaws.com",                               "kinesisanalytics.amazonaws.com",                               "databrew.amazonaws.com",                               "redshift.amazonaws.com",                               "athena.amazonaws.com",                               "sqs.amazonaws.com",                               "secretsmanager.amazonaws.com",                               "kinesis.amazonaws.com",                               "rekognition.amazonaws.com",                               "eks.amazonaws.com",                               "sns.amazonaws.com",                               "cloudformation.amazonaws.com",                               "elasticfilesystem.amazonaws.com",                               "iotanalytics.amazonaws.com",                               "ec2.application-autoscaling.amazonaws.com",                               "ecs.amazonaws.com",                               "codedeploy.amazonaws.com",                               "elasticloadbalancing.amazonaws.com",                               "application-autoscaling.amazonaws.com",                               "cloudtrail.amazonaws.com",                               "ec2.amazonaws.com",                               "logs.amazonaws.com",                               "ecs-tasks.amazonaws.com",                               "iotevents.amazonaws.com",                               "lambda.amazonaws.com",                               "credentials.iot.amazonaws.com",                               "glue.amazonaws.com",                               "codewhisperer.amazonaws.com",                               "iot.amazonaws.com",                               "dynamodb.amazonaws.com",                               "events.amazonaws.com",                               "pipes.amazonaws.com",                               "codecommit.amazonaws.com",                               "elasticbeanstalk.amazonaws.com"                           ]                       },                       "Action": "sts:AssumeRole"                   }               ]           },           "Description": "",           "MaxSessionDuration": 3600,           "Tags": [               {                   "Key": "cloudlab",                   "Value": "c226028a5703790l16576859t1w072082269951"               }           ],           "RoleLastUsed": {}       }   }   
+* Learner Lab Attached Policies Evidence: Executed aws iam list-attached-role-policies --role-name LabRole:
+  json   {       "AttachedPolicies": [           {               "PolicyName": "c226028a5703790l16576859t1w072082269951-VocLabPolicy1-cd1vJmyZj2C0",               "PolicyArn": "arn:aws:iam::072082269951:policy/c226028a5703790l16576859t1w072082269951-VocLabPolicy1-cd1vJmyZj2C0"           },           {               "PolicyName": "c226028a5703790l16576859t1w072082269951-VocLabPolicy3-ff6odFABIR1S",               "PolicyArn": "arn:aws:iam::072082269951:policy/c226028a5703790l16576859t1w072082269951-VocLabPolicy3-ff6odFABIR1S"           },           {               "PolicyName": "c226028a5703790l16576859t1w072082269951-VocLabPolicy2-UehdMWX72m10",               "PolicyArn": "arn:aws:iam::072082269951:policy/c226028a5703790l16576859t1w072082269951-VocLabPolicy2-UehdMWX72m10"           },           {               "PolicyName": "AmazonSSMManagedInstanceCore",               "PolicyArn": "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"           },           {               "PolicyName": "AmazonEKSClusterPolicy",               "PolicyArn": "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"           },           {               "PolicyName": "AmazonEC2ContainerRegistryReadOnly",               "PolicyArn": "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"           },           {               "PolicyName": "AmazonEKSWorkerNodePolicy",               "PolicyArn": "arn:aws:iam::aws:policy/AmazonEKSWorkerNodePolicy"           }       ]   }   
+* Learner Lab Inline Policies Evidence: Executed aws iam list-role-policies --role-name LabRole:
+  json   {       "PolicyNames": []   }   
 
 ## Operational Analysis
+The investigation proves that authentication and authorization are distinct operational phases. Authentication was successful because Marcus supplied valid credentials, allowing AWS to verify his identity. However, authorization failed. In AWS IAM, all API requests are implicitly denied unless an explicit policy grants permission. Because Marcus's IAM user had no attached policies or group memberships, AWS evaluated his S3 requests against default implicit deny rules, returning AccessDenied.
 
-Bright Path's maintenance workflow is a strong candidate for automation because the same administrative task is performed repeatedly across multiple systems.
+The client's proposal to resolve the issue by attaching AmazonS3FullAccess must be rejected. AmazonS3FullAccess grants administrative permissions (s3:*) across all resources (Resource: "*") in the account. This includes dangerous actions like deleting buckets (s3:DeleteBucket), altering bucket policies (s3:PutBucketPolicy), and destroying unrelated company data. Attaching broad administrative policies to satisfy a single bucket requirement violates least-privilege principles and creates an unnecessary security risk if credentials are ever compromised.
 
-Run Command is appropriate because it allows a defined command or script to be executed simultaneously on multiple managed instances without requiring individual logins.
-
-When combined with State Manager or scheduled execution through Amazon EventBridge, the update process becomes repeatable and verifiable.
-
-Inventory serves a different purpose by providing visibility into software installations and system configuration across the environment.
-
-Session Manager remains valuable for troubleshooting and one-time investigations because administrators sometimes require interactive access to a specific host. However, using Session Manager for routine updates would still require manual intervention and would not fully address the inefficiencies identified in the ticket.
-
-Parameter Store is appropriate for environment-specific values because it centralizes configuration information and reduces duplication across systems.
-
-However, the investigation confirmed that moving a value into Parameter Store does not automatically update application configuration files. Applications must be modified to retrieve parameters programmatically.
-
-The Bright Path website requirement is best addressed through Amazon S3 Static Website Hosting because the content consists entirely of HTML documents, images, and downloadable files.
-
-The workload does not require server-side processing, authentication, user sessions, or database connectivity, making a traditional web server unnecessary.
+Furthermore, inspecting LabRole in the Learner Lab demonstrated the difference between trust relationships (AssumeRolePolicyDocument) and permission policies (attached managed policies). LabRole is a service execution role designed for lab automation across dozens of AWS services, not an end-user identity. Recommending LabRole or an equivalent broad execution role for Marcus would be an over-permissioned quick fix rather than an operational least-privilege solution.
 
 ## Recommendation
+HarborTech should recommend implementing a customer-managed IAM policy scoped strictly to Marcus Webb's documented job function. The policy must contain two distinct statement blocks to match S3's resource hierarchy:
 
-I recommend AWS Systems Manager State Manager, or alternatively Run Command scheduled through Amazon EventBridge, to automate Bright Path's weekly maintenance activities.
+1. Bucket-Level Scope (arn:aws:s3:::riverside-inventory): Allow s3:ListBucket so Marcus can view and navigate the bucket contents.
+2. Object-Level Scope (arn:aws:s3:::riverside-inventory/*): Allow s3:GetObject to read inventory reports and s3:PutObject to upload vendor files.
 
-This solution allows recurring update tasks to execute automatically across all five EC2 instances while providing centralized visibility into execution status and results.
-
-Before implementation, all EC2 instances must satisfy managed-node requirements by:
-
-- Running the SSM Agent
-- Maintaining Systems Manager connectivity
-- Possessing the required IAM permissions
-
-For configuration management, I recommend storing environment-specific values in AWS Systems Manager Parameter Store and modifying applications to retrieve those values dynamically.
-
-This eliminates duplicated configuration data and improves consistency across systems.
-
-For the public resource page, I recommend Amazon S3 Static Website Hosting.
-
-The workload consists entirely of static files and does not require backend processing. S3 provides a scalable, highly available, and cost-effective solution while eliminating the need to patch and maintain another EC2 instance.
+Rather than attaching this policy directly to Marcus's individual IAM user profile, HarborTech should recommend attaching it to an InventoryCoordinators IAM group and adding Marcus as a member. This maintains clean governance and ensures consistent permissions for future hires in the same role.
 
 ## Escalation Notes
+Investigation into ticket TKT-2026-0002 confirms that Marcus Webb authenticated successfully, but his S3 requests fail due to an authorization gap caused by a complete lack of attached IAM policies or group memberships. HarborTech should reject the client's proposal to grant AmazonS3FullAccess, as giving account-wide administrative privileges violates the principle of least privilege and introduces severe security risks. The required access direction is to create a custom IAM policy granting s3:ListBucket on the bucket ARN (arn:aws:s3:::riverside-inventory), along with s3:GetObject and s3:PutObject on the object ARN path (arn:aws:s3:::riverside-inventory/*), attached directly to an InventoryCoordinators IAM group.
 
-The public website test returned a 403 Forbidden response.
-
-Based on the available evidence, this result appears to be caused by Learner Lab public-access restrictions rather than a failure of S3 Static Website Hosting.
-
-No attempt should be made to bypass sandbox controls.
-
-In a production environment, public website availability would require appropriate bucket policies, public-access settings, and organizational approval.
-
-The Systems Manager recommendation requires verification that each EC2 instance satisfies managed-node prerequisites.
-
-Any instance lacking the SSM Agent, required IAM permissions, or Systems Manager network connectivity should be escalated to authorized personnel for remediation before automation is implemented.
+The remaining implementation decisions for the authorized team member include reviewing this least-privilege policy design, deciding whether to establish the new InventoryCoordinators group or integrate with an existing job-function workflow, and formally applying the change in the Riverside Goods AWS environment. This production access change must be reviewed and executed by an authorized HarborTech team member rather than the intern because intern responsibilities are strictly bounded to evidence gathering, root-cause diagnosis, and technical recommendations. Elevating production IAM changes to authorized personnel ensures proper change management governance and maintains security separation within operational roles.
 
 ## Lessons Learned
-
-This week's investigation demonstrated that automation should be implemented when work is repetitive, predictable, and benefits from centralized execution.
-
-Systems Manager provides specialized tools that address different operational requirements, including automation, inventory collection, configuration management, and interactive administration.
-
-The investigation also reinforced the importance of selecting the appropriate service model rather than defaulting to virtual machines for every workload.
-
-Amazon S3 Static Website Hosting demonstrated how a managed service can eliminate unnecessary infrastructure while still satisfying business requirements.
-
-Finally, the exercise highlighted the importance of documenting evidence, understanding environment restrictions, and making recommendations based on verified findings rather than assumptions.
+* Authentication vs. Authorization: A successful sign-in only proves identity; it does not grant permissions. Access troubleshooting must always isolate credential verification from policy evaluation.
+* Least Privilege Requires Business Context: Permissions cannot be evaluated in a vacuum. A technician must define the exact business tasks and required resource ARNs before evaluating or drafting a policy.
+* CLI Inspection Provides Defensible Evidence: CLI commands like aws sts get-caller-identity and aws iam get-role offer raw JSON evidence that clarifies identity boundaries and policy attachments better than console graphics.
+* Avoid Quick-Fix Over-Permissioning: Shortcuts like assigning full service access (AmazonS3FullAccess) or shared service roles (LabRole) solve immediate access blockers at the expense of long-term cloud security and governance.
 
 ## Professional Vocabulary
 
-### Systems Manager
+### Authentication
+The verification process that confirms the identity of a user, service, or system attempting to access AWS resources.
 
-An AWS service that provides centralized management, automation, and operational control for AWS resources.
+### Authorization
+The evaluation process AWS uses to determine which specific API actions an authenticated identity is permitted to perform on designated resources.
 
-### Managed Node
+### IAM
+AWS Identity and Access Management. The core AWS service used to manage identities, credentials, roles, and permission policies across an account.
 
-An EC2 instance or supported machine that is configured to communicate with Systems Manager and participate in management operations.
+### Policy
+A JSON document that explicitly defines allowed or denied AWS API actions, target resources, and evaluation conditions.
 
-### Run Command
+### Least Privilege
+The security practice of granting an identity only the minimum permissions necessary to complete approved business tasks.
 
-A Systems Manager capability that executes commands and scripts on one or more managed instances without requiring interactive logins.
+### AccessDenied
+An AWS API error response indicating that an identity lacks explicit authorization to perform the requested operation on a target resource.
 
-### Session Manager
+### AWS CLI
+A unified command-line tool that enables operational management, configuration, and inspection of AWS services through API calls.
 
-A secure administrative access service that provides browser-based shell access without opening inbound SSH ports.
+### CloudShell
+A browser-based, pre-authenticated terminal environment provided in the AWS Management Console with pre-installed administrative tools like the AWS CLI.
 
-### Inventory
+### Caller Identity
+The specific AWS account ID, IAM principal, and ARN associated with the active credentials executing an API request.
 
-A Systems Manager feature that collects information about installed software, operating systems, network configuration, and services.
-
-### Parameter Store
-
-A centralized repository for configuration values and application settings used across AWS environments.
-
-### Automation
-
-The use of predefined workflows and management services to perform recurring operational tasks with minimal manual intervention.
-
-### Static Website Hosting
-
-An Amazon S3 capability that serves HTML, images, and other static files directly from an S3 bucket.
-
-### Object Storage
-
-A storage architecture that stores data as objects containing content, metadata, and unique identifiers.
-
-### Management Plane
-
-The administrative layer used to configure, monitor, and control cloud resources and services.
+### Resource Scope
+The precise target Amazon Resource Name (ARN) or pattern to which an IAM policy statement applies, limiting permissions to specific infrastructure boundaries.
