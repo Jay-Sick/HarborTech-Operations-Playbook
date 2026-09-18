@@ -1,5 +1,4 @@
-<br>
- 
+
 ## Escalation Notes
  
 During testing, the S3 website endpoint returned a 403 Forbidden error. Based on the available evidence, this behavior is consistent with Learner Lab sandbox restrictions rather than a configuration error. Public-access controls within the training environment may prevent public website viewing even when static website hosting is configured correctly.
@@ -8,7 +7,6 @@ No attempt should be made to bypass these restrictions. In a production AWS envi
  
 The Systems Manager recommendation also requires verification that all EC2 instances meet managed-node prerequisites. Any missing SSM Agent installation, IAM permissions, or connectivity requirements must be remediated by authorized personnel before automation is deployed.
  
-<br>
  
 ## Lessons Learned
  
@@ -20,7 +18,6 @@ The Systems Manager recommendation also requires verification that all EC2 insta
 * Operational investigations should rely on evidence and documented results rather than assumptions.
 * Environment restrictions should be documented and escalated rather than bypassed.
  
-<br>
  
 ## Professional Vocabulary
  
