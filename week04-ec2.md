@@ -459,87 +459,115 @@ No escalation was required in this lab because the environment was disposable an
  
 **EC2 Instance**
 A virtual server running in AWS that provides compute resources for applications. An EC2 instance is launched from an AMI and uses selected networking, storage, and compute resources.
- 
+
+
 **AMI (Amazon Machine Image)**
 A reusable machine image used to launch EC2 instances. An AMI contains the operating system, software configuration, and settings needed to create a new server.
- 
+
+
 **Instance Type**
 The virtual hardware profile selected for an EC2 instance. The instance type determines the amount of CPU, memory, networking performance, and storage resources available to the workload.
- 
+
+
 **EBS (Elastic Block Store)**
 Persistent block storage used by EC2 instances. Data stored on an EBS volume remains available even if an EBS-backed instance is stopped and started.
- 
+
+
 **Security Group**
 A stateful virtual firewall that controls allowed inbound and outbound traffic for AWS resources. Security groups determine whether network connections are permitted to reach an EC2 instance.
- 
+
+
 **User Data**
 Optional launch-time instructions provided to an EC2 instance during deployment. User data is commonly used to automate software installation and service configuration during the initial boot process.
- 
+
+
 **Instance Metadata**
 Information about an EC2 instance that is available from inside the guest operating system through the Instance Metadata Service (IMDS). Examples include the instance ID, network configuration, and IAM-related information.
- 
+
+
 **Lifecycle State**
 The current operating condition of an EC2 instance. Common lifecycle states include pending, running, stopping, stopped, shutting-down, and terminated.
- 
+
+
 **Security of the Cloud**
 AWS is responsible for protecting the physical facilities, hardware, networking infrastructure, and virtualization layer that support cloud services. Customers do not manage these underlying resources.
- 
+
+
 **Security in the Cloud**
 Customers are responsible for securing operating systems, applications, user access, data, and AWS configurations such as security groups and IAM permissions.
- 
+
+
 **Ticket Analysis**
 A healthy EC2 instance with a missing inbound HTTP rule points toward a customer-controlled configuration issue rather than a failure of AWS physical infrastructure. Troubleshooting evidence should be used to determine which layer is responsible before changes are made.
- 
+
+
 **Intern Responsibility**
 An intern should investigate, document, verify evidence, recommend the supported corrective action, and escalate production changes that exceed their authority. Recommendations should be evidence-based and follow change-control procedures.
- 
+
+
 **AMI Virtualization**
 An AMI separates the reusable server blueprint from the physical hardware. This allows identical EC2 instances to be launched repeatedly without manually rebuilding an operating system.
- 
+
+
 **Compute Virtualization**
 Processing power and memory are provided through software-defined instance types rather than dedicated physical servers assigned to one customer.
- 
+
+
 **Storage Virtualization**
 AWS separates storage from compute resources. Data persistence depends on the storage service being used, such as EBS or instance store, rather than the running state of the EC2 instance.
- 
+
+
 **Virtual Networking**
 Addressing, routing, firewall behavior, and connectivity are controlled by software-defined networking services such as VPCs, subnets, route tables, and security groups.
- 
+
+
 **Evidence-Based Troubleshooting**
 A troubleshooting approach that relies on commands, logs, outputs, and documented observations rather than assumptions. Findings should be supported by collected evidence before conclusions are made.
- 
+
+
 **Root Cause**
 The underlying reason an issue occurs. A root cause should explain the observed behavior and be supported by technical evidence.
- 
+
+
 **Corrective Action**
 The smallest change supported by evidence that resolves the identified root cause while minimizing risk to the environment.
- 
+
+
 **Verification**
 The process of confirming that a corrective action successfully resolved the issue through testing and evidence collection.
- 
+
+
 **Reachability**
 The ability of a client, user, or service to successfully communicate with a resource across a network path.
- 
+
+
 **Availability**
 The ability of an application or service to respond successfully to requests when users need it.
- 
+
+
 **Least Privilege**
 A security principle that grants only the permissions necessary to perform a required task, reducing operational and security risk.
- 
+
+
 **Change Control**
 A formal process used to review, approve, implement, and document changes in an environment to reduce the likelihood of outages and unintended consequences.
- 
+
+
 **Escalation**
 The process of involving personnel with the required authority, approval, or expertise when a task exceeds assigned responsibilities.
- 
+
+
 **Control Plane**
 The AWS management layer used to create, configure, monitor, and administer cloud resources through the console, CLI, APIs, or SDKs.
- 
+
+
 **Guest Operating System**
 The operating system running inside a virtual machine. In this lab, Amazon Linux served as the guest operating system running on the EC2 instance.
- 
+
+
 **Infrastructure Health**
 The operational condition of cloud resources as indicated by monitoring information, service status, and AWS health checks.
- 
+
+
 **Network Access Control**
 The management of traffic between systems through security groups, network ACLs, routing, firewalls, and other networking controls.
