@@ -115,10 +115,10 @@ us-east-1
 
 aws ec2 describe-vpcs \
 --query "Vpcs[*].[VpcId,CidrBlock]" \
---ou*put table
+--output table
 
  
-### Discover Subnet*
+### Discover Subnets
  
 
 aws ec2 describe-subnets*\
@@ -129,7 +129,6 @@ aws ec2 describe-subnets*\
  
 ### Create Security Group
  
-b*sh
 aws ec2 create-security-group \*--group-name week4-web-sg \
 --desc*iption "Week4 EC2 Troubleshooting *ab" \
 --vpc-id vpc-0f991ecc98b18e9*7
@@ -137,55 +136,55 @@ aws ec2 create-security-group \*--group-name week4-web-sg \
  
 *## Create User Data
  
-*cat >*user-data.sh <<'EOF'
+cat >*user-data.sh <<'EOF'
 #!/bin/bash
-y*m update -y
+yum update -y
 yum install -y httpd
-s*stemctl enable httpd
-systemctl sta*t httpd
-echo "<h1>Riverside Goods *est Server</h1>" > /var/www/html/i*dex.html
+systemctl enable httpd
+systemctl start httpd
+echo "<h1>Riverside Goods test Server</h1>" > /var/www/html/index.html
 EOF
 
  
-### Retrieve Ama*on Linux AMI
+### Retrieve Amazon Linux AMI
  
 
-aws ssm get-*arameter \
---name /aws/service/ami*amazon-linux-latest/al2023-ami-ker*el-default-x86_64 \
---query "Param*ter.Value" \
+aws ssm get-parameter \
+--name /aws/service/ami/amazon-linux-latest/al2023-ami-kernel-default-x86_64 \
+--query "Parameter.Value" \
 --output text
 
  
-Ou*put:
+Output:
  
-*ext
+text
 ami-0b245cc5f82576748
 *``
  
 ### Launch Instance
  
 
-a*s ec2 run-instances \
---image*id ami-0b245cc5f82576748 \
---insta*ce-type t2.micro \
---subnet-id sub*et-08105afedd1453263 \
---security*group-ids sg-0b8d68f46ebd30aae \
--*associate-public-ip-address \
---us*r*data file://user-data.sh \
-*-tag-specifications 'ResourceType=*nstance,Tags=[{Key=Name,Value=week*-web}]'
+aws ec2 run-instances \
+--image-id ami-0b245cc5f82576748 \
+--instance-type t2.micro \
+--subnet-id subnet-08105afedd1453263 \
+--security-group-ids sg-0b8d68f46ebd30aae \
+--associate-public-ip-address \
+--user-data file://user-data.sh \
+--tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=week4-web}]'
 
  
 
  
-## Baseline Evid*nce
+## Baseline Evidence
  
-### Evidence A: Instance ID a*d AMI ID
+### Evidence A: Instance ID and AMI ID
  
 
-aws ec2 describe*instances \
---filters "Name=tag:Na*e,Values=week4-web" \
---query "Res*rvations[*].Instances[*].[Instance*d,ImageId,State.Name]" \
---output *able
+aws ec2 describe-instances \
+--filters "Name=tag:Name,Values=week4-web" \
+--query "Reservations[*].Instances[*].[InstanceId,ImageId,State.Name]" \
+--output table
 
  
 Output:
@@ -198,12 +197,12 @@ ami-0b245cc5f82576748
  
 *## Evidence B: Initial Public IPv4*
 *aws ec2 describe-instances \
---ins*ance-ids i-036e77e71e474e75b \
---q*ery*"Reservations[0].Instances[0].Publ*cIpAddress" \
+--instance-ids i-036e77e71e474e75b \
+--query*"Reservations[0].Instances[0].PublicIpAddress" \
 --output text
 
  
-O*tput:
+Output:
  
 text
 3.87.56.85
@@ -211,7 +210,7 @@ text
  
 *## Evidence C: Status Checks
  
-b*sh
+bash
 aws ec2 describe-instance-statu* \
 --instance-ids i-036e77e71e474e*5b \
 --include*all-instances
@@ -224,19 +223,19 @@ InstanceStatus: ok
 Syste*Status: ok
 
  
-*## Evidence D: Security Group Befo*e Fix
+*## Evidence D: Security Group Before Fix
  
 
-aws ec2 describe-se*urity-groups \
---group*ids sg-0b8d68f46ebd30aae
+aws ec2 describe-security-groups \
+--group-ids sg-0b8d68f46ebd30aae
 
  
-Rele*ant Output:
+Relevant Output:
  
 *"IpPermissions": []
 
  
-### Evide*ce E: Failed HTTP Test
+### Evidence E: Failed HTTP Test
  
 *curl -I http://3.87.56.85
 ``*
@@ -251,22 +250,22 @@ text
  
 ## Root-Cause Analysis
  
-*he instance*was running, had a public IPv4 add*ess, and passed both AWS instance *nd system status checks. These fin*ings confirmed*that the EC2 infrastructure was he*lthy but did not prove application*availability.
+*he instance was running, had a public IPv4 address, and passed both AWS instance and system status checks. These findings confirmed that the EC2 infrastructure was healthy but did not prove application/availability.
  
-The strongest evide*ce was the security group configur*tion:
+The strongest evide*ce was the security group configuration:
  
 
 "IpPermissions": []*
  
-The security group contained *o inbound rules, which meant inbou*d HTTP requests could not reach th* instance. Because the instance wa* healthy and later responded succe*sfully after a security group chan*e, the root cause was determined t* be the missing inbound HTTP rule.*
+The security group contained *o inbound rules, which meant inbound HTTP requests could not reach th* instance. Because the instance was healthy and later responded successfully after a security group change, the root cause was determined to be the missing inbound HTTP rule.*
 
  
 ## Corrective Action
  
-The sm*llest supported corrective action *as adding inbound TCP port 80 acce*s.
+The smallest supported corrective action was adding inbound TCP port 80 access.
  
 
-aws ec2 authorize-secu*ity-group-ingress \
+aws ec2 authorize-security-group-ingress \
 --group-id sg-*b8d68f46ebd30aae \
 --protocol tcp *
 --port 80 \
@@ -276,25 +275,25 @@ aws ec2 authorize-secu*ity-group-ingress \
  
 
 {
-"Return": t*ue
+"Return": true
 }
 
  
 
  
-## Verification Evi*ence
+## Verification Evidence
  
-### Verify*Security Group
+### Verify Security Group
  
 
-aws ec2 de*cribe-security-groups \
+aws ec2 describe-security-groups \
 --group-id* sg-0b8d68f46ebd30aae
 ``*
  
 Relevant Output:
  
 
-"IpPer*issions": [
+"IpPermissions": [
 *{
 "IpProtocol": "tcp",
 "*romPort": 80,
@@ -315,22 +314,22 @@ Server:*Apache/2.4.68 (Amazon Linux)
 Conte*t-Type: text/html; charset=UTF-8
 `*`
  
-*he successful HTTP response verifi*d that inbound traffic could now r*ach the application.
+The successful HTTP response verified that inbound traffic could now reach the application.
  
 
  
 ## IMDS*2 and Guest Evidence
  
-### Verify A*ache Service
+### Verify Apache Service
  
 
-sudo systemc*l status httpd
+sudo systemctl status httpd
 
  
-Relevant Outpu*:
+Relevant Output:
  
 text
-Active: active (running*
+Active: active (running)
 
  
 ### Verify Local Application*
@@ -342,7 +341,7 @@ Output:
 html*<h1>Riverside Goods Test Server</h*>
 
  
-### Retrieve Instance ID vi* IMDSv2
+### Retrieve Instance ID vid IMDSv2
  
 
 *OKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" \
@@ -350,76 +349,76 @@ html*<h1>Riverside Goods Test Server</h*>
 
  
 *``bash
-curl -H "X-aws-ec2-metadata*token: $TOKEN" \
+curl -H "X-aws-ec2-metadata-token: $TOKEN" \
 http://*69.254.169.254/latest/meta-data/in*tance-id
 
  
 Output:
  
 text
-i-0*6e77e71e474e75b
+i-036e77e71e474e75b
 ``*
  
-The*IMDSv2 result matched the AWS CLI *nstance ID and provided guest-leve* verification.
+The IMDSv2 result matched the AWS CLI instance ID and provided guest-level verification.
  
 
  
-## Stop/Start*Lifecycle Test
+## Stop/Start Lifecycle Test
  
-Before the lifecyc*e test:
+Before the lifecycle test:
  
-- Instance ID* `i-036e77e71e474e75*`
-- Public*IPv4: `3.87.56.85`
+- Instance ID: `i-036e77e71e474e75b`
+- Public IPv4: `3.87.56.85`
 - Web page retu*ned expected content
  
-**Note*** Actual stop/start outputs and p*st-restart public IPv4*observations should be inserted*here if collected during the lab. *o unsupported lifecycle conclusion* were made without evidence.
+**Note*** Actual stop/start outputs and p*st-restart public IPv4 observations should be inserted here if collected during the lab. To unsupported lifecycle conclusions were made without evidence.
  
-Obse*ved behavior confirms*that EBS-backed storage*preserves installed software and w*bsite content. Any change*in public IPv4 address after*restart should be documented using*actual before-and-after evidence.
+Observed behavior confirms that EBS-backed storage preserves installed software and website content. Any change in public IPv4 address after restart should be documented using actual before-and-after evidence.
 *
  
 ## Cleanup Evidence
  
-### Term*nate Instance
+### Terminate Instance
  
 *aws ec2 terminate-instances \
---in*tance-ids i-036e77e71e474e75b
+--instance-ids i-036e77e71e474e75b
 
 *Relevant Output:
  
 *{
 "CurrentState": {
-"*ame": "shutting-down"
+"Name": "shutting-down"
 * },
 "PreviousState": {
-"*ame": "running"
+"Name": "running"
 }
 }
 
  
 *## Wait for Termination*
 
-aws ec2 wait instance-ter*inated \
---instance-ids i-036e77e7*e474e75b
+aws ec2 wait instance-terminated \
+--instance-ids i-036e77e71e474e75b
 ``*
  
 ### Verify Terminated
  
-*aws ec2 describe-instances \
+aws ec2 describe-instances \
 --ins*ance*ids i-036e77e71e474e75b \
 --query*"Reservations[0].Instances[0].*tate.Name" \
 --output text
 
  
-Ou*put:
+Output:
  
 text
 terminated
 
  
-### *elete Security Group
+### delete Security Group
  
-*aws ec2 delete-security-group \
---*roup-id sg-0b8d68f*6ebd30aae
+* aws ec2 delete-security-group \
+--group-id sg-0b8d68f*6ebd30aae
 
  
 Output:
@@ -435,55 +434,26 @@ Output:
  
 --*
  
-*# Escalation and Change-Control No*es
+*# Escalation and Change-Control Notes
  
-In a*production environment, I*would not modify a security group *ithout authorization. Opening inbo*nd TCP port 80 changes the organiz*tion's network security posture an* should be approved through formal*change-control procedures. I would*request approval from the system o*ner and security authority, docume*t the rollback procedure, and capt*re pre-change evidence before impl*mentation.
+In a production environment, I would not modify a security group without authorization. Opening inbound TCP port 80 changes the organization's network security posture and should be approved through formal*change-control procedures. I would request approval from the system owner and security authority, document the rollback procedure, and capture pre-change evidence before implimentation.
  
-No escalation was requ*red in this lab because the enviro*ment was disposable and designed f*r troubleshooting practice.
+No escalation was required in this lab because the environment was disposable and designed for troubleshooting practice.
  
 
  
 *# Lessons Learned
  
-- An EC2 instan*e being **Running** does not guara*tee application availability.
-- AW* status checks verify infrastructu*e health but not web-service acces*ibility.
-- Security groups are oft*n the first networking layer to in*pect when a service cannot be reac*ed.
-- User data demonstrates inten*ed configuration, not successful e*ecution.
-- Guest-level validation *s important because control-plane *vidence and workload evidence answ*r different questions.
-- IMDSv2 pr*vides a secure method for retrievi*g instance metadata from inside th* guest operating system.
-- Trouble*hooting should focus on evidence a*d the smallest supported correctiv* action.
-- Rebuilding resources wi*hout evidence can introduce unnece*sary risk and delay resolution.
+- An EC2 instance being **Running** does not guarantee application availability.
+- AWS status checks verify infrastructure health but not web-service accesiibility.
+- Security groups are often the first networking layer to inspect when a service cannot be reacted.
+- User data demonstrates intented configuration, not successful execution.
+- Guest-level validation is important because control-plane evidence and workload evidence answer different questions.
+- IMDSv2 provides a secure method for retrieving instance metadata from inside the guest operating system.
+- Troubleshooting should focus on evidence and the smallest supported corrective action.
+- Rebuilding resources without evidence can introduce unnecessary risk and delay resolution.
  
 -*-
  
 ## Professional Vocabulary
- 
-- A*azon EC2
-- Security Group
-- Inboun* Rule
-- Outbound Rule
-- Public IPv* Address
-- Status Check
-- System S*atus
-- Instance Status
-- Apache HT*P Server
-- User Data
-- IMDSv2
-- In*tance Metadata Service
-- Session M*nager
-- Root Cause
-- Remediation
--*Verification
-- Lifecycle Test
-- EB* Volume
-- Least Privilege
-- Change*Control
-- Escalation
-- Control Pla*e
-- Guest Operating System
-- Reach*bility
-- Availability
-- Network Ac*ess Control
-- Infrastructure Healt*
-- Corrective Action
-***itHub File Name:** `week04-ec2.md`*`*
+
