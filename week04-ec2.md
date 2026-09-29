@@ -190,7 +190,7 @@ aws ec2 describe-instances \
 Output:
  
 text
-i-036e7*e71e474e75b
+i-036e77e71e474e75b
 ami-0b245cc5f82576748
 *unning
 
