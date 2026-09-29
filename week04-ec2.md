@@ -134,7 +134,7 @@ aws ec2 create-security-group \*--group-name week4-web-sg \
 --vpc-id vpc-0f991ecc98b18e9*7
 
  
-*## Create User Data
+### Create User Data
  
 cat >*user-data.sh <<'EOF'
 #!/bin/bash
@@ -211,16 +211,16 @@ text
 *## Evidence C: Status Checks
  
 bash
-aws ec2 describe-instance-statu* \
---instance-ids i-036e77e71e474e*5b \
---include*all-instances
+aws ec2 describe-instance-status \
+--instance-ids i-036e77e71e474e75b \
+--include-all-instances
 
  
-Relevant Output*
+Relevant Outputs
  
 text
 InstanceStatus: ok
-Syste*Status: ok
+SystemStatus: ok
 
  
 *## Evidence D: Security Group Before Fix
@@ -242,8 +242,8 @@ Relevant Output:
  
 Result:
  
-text
 (no response)
+
 ^**
  
 
@@ -257,7 +257,7 @@ The strongest evide*ce was the security group configuration:
 
 "IpPermissions": []*
  
-The security group contained *o inbound rules, which meant inbound HTTP requests could not reach th* instance. Because the instance was healthy and later responded successfully after a security group change, the root cause was determined to be the missing inbound HTTP rule.*
+The security group contained to inbound rules, which meant inbound HTTP requests could not reach th* instance. Because the instance was healthy and later responded successfully after a security group change, the root cause was determined to be the missing inbound HTTP rule.*
 
  
 ## Corrective Action
@@ -266,7 +266,7 @@ The smallest supported corrective action was adding inbound TCP port 80 access.
  
 
 aws ec2 authorize-security-group-ingress \
---group-id sg-*b8d68f46ebd30aae \
+--group-id sg-3b8d68f46ebd30aae \
 --protocol tcp *
 --port 80 \
 --cidr 0.0.0.0/0
@@ -338,7 +338,7 @@ curl http://localhost
 *
 Output:
  
-html*<h1>Riverside Goods Test Server</h*>
+""html*<h1>Riverside Goods Test Server</h*>""
 
  
 ### Retrieve Instance ID vid IMDSv2
@@ -350,7 +350,7 @@ html*<h1>Riverside Goods Test Server</h*>
  
 *``bash
 curl -H "X-aws-ec2-metadata-token: $TOKEN" \
-http://*69.254.169.254/latest/meta-data/in*tance-id
+http://*69.254.169.254/latest/meta-data/instance-id
 
  
 Output:
@@ -371,7 +371,7 @@ Before the lifecycle test:
 - Public IPv4: `3.87.56.85`
 - Web page retu*ned expected content
  
-**Note*** Actual stop/start outputs and p*st-restart public IPv4 observations should be inserted here if collected during the lab. To unsupported lifecycle conclusions were made without evidence.
+**Note*** Actual stop/start outputs and post-restart public IPv4 observations should be inserted here if collected during the lab. To unsupported lifecycle conclusions were made without evidence.
  
 Observed behavior confirms that EBS-backed storage preserves installed software and website content. Any change in public IPv4 address after restart should be documented using actual before-and-after evidence.
 *
@@ -418,7 +418,7 @@ terminated
 ### delete Security Group
  
 * aws ec2 delete-security-group \
---group-id sg-0b8d68f*6ebd30aae
+--group-id sg-0b8d68f46ebd30aae
 
  
 Output:
@@ -426,11 +426,11 @@ Output:
 
 {
 * "Return": true,
-"*roupId": "sg-0b*d68f46ebd30aae"
+GroupId": "sg-0b8d68f46ebd30aae"
 }
 
  
-*leanup completed successfully.
+Cleanup completed successfully.
  
 --*
  
